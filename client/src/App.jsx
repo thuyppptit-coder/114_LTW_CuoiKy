@@ -7,6 +7,8 @@ import Register from "./pages/Register";
 import OwnerArea from "./pages/OwnerArea";
 import TenantArea from "./pages/TenantArea";
 import NotFound from "./pages/NotFound";
+import TenantRepairs from "./pages/tenant/Repairs";
+import OwnerRepairs from "./pages/owner/Repairs";
 
 const App = () => (
   <Routes>
@@ -20,6 +22,7 @@ const App = () => (
       <Route element={<ProtectedRoute roles={["owner"]} />}>
         <Route path="owner" element={<OwnerArea />}>
           <Route index element={<p>Tổng quan (C làm dashboard)</p>} />
+          <Route path="repairs" element={<OwnerRepairs />} />
         </Route>
       </Route>
 
@@ -27,6 +30,7 @@ const App = () => (
       <Route element={<ProtectedRoute roles={["tenant"]} />}>
         <Route path="tenant" element={<TenantArea />}>
           <Route index element={<p>Phòng và hợp đồng của tôi</p>} />
+          <Route path="repairs" element={<TenantRepairs />} />
         </Route>
       </Route>
 
