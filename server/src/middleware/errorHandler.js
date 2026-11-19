@@ -1,42 +1,35 @@
-const errorHandler = (err, req, res, next) => {
-    let statusCode = err.statusCode || 500;
-    let message = err.message || "Lỗi máy chủ nội bộ";
+import AppError from "../utils/AppError.js";
 
-    // Lỗi sai định dạng ObjectId của MongoDB
-    if (err.name === "CastError") {
-        statusCode = 400;
-        message = "ID không hợp lệ";
-    }
-
-    // Lỗi trùng dữ liệu unique (ví dụ: trùng email, trùng số phòng)
-    if (err.code === 11000) {
-        statusCode = 400;
-        const field = Object.keys(err.keyValue)[0];
-        message = `Giá trị '${field}' đã tồn tại`;
-    }
-
-    // Lỗi validate dữ liệu của Mongoose
-    if (err.name === "ValidationError") {
-        statusCode = 400;
-        message = Object.values(err.errors)
-            .map((item) => item.message)
-            .join(", ");
-    }
-
-    // Lỗi token JWT không hợp lệ hoặc hết hạn
-    if (err.name === "JsonWebTokenError") {
-        statusCode = 401;
-        message = "Token không hợp lệ";
-    }
-    if (err.name === "TokenExpiredError") {
-        statusCode = 401;
-        message = "Phiên đăng nhập đã hết hạn";
-    }
-
-    res.status(statusCode).json({
-        success: false,
-        message,
-    });
+// Route không tồn tại -> 404
+export const notFound = (req, res, next) => {
+    next(new AppError(`Không tìm thấy ${req.method} ${req.originalUrl}`, 404));
 };
 
-export default errorHandler;
+// Nơi duy nhất trả lỗi về client (4 tham số thì Express mới nhận là error handler)
+export const errorHandler = (err, req, res, next) => {
+    let statusCode = err.statusCode || 500;
+    let message = err.message || "Lỗi máy chủ";
+
+    if (err.name === "ValidationError") {
+        // Mongoose: thiếu field, sai enum...
+        statusCode = 400;
+        message = Object.values(err.errors).map((e) => e.message).join(", ");
+    } else if (err.code === 11000) {
+        // Trùng unique index (vd: email)
+        statusCode = 409;
+        message = `${Object.keys(err.keyValue).join(", ")} đã tồn tại`;
+    } else if (err.name === "CastError") {
+        // _id sai định dạng
+        statusCode = 400;
+        message = "ID không hợp lệ";
+    } else if (err.name === "JsonWebTokenError" || err.name === "TokenExpiredError") {
+        statusCode = 401;
+        message = "Token không hợp lệ hoặc đã hết hạn";
+    } else if (err.name === "MulterError") {
+        statusCode = 400;
+    }
+
+    if (statusCode === 500) console.error(err);
+
+    res.status(statusCode).json({ message });
+};
