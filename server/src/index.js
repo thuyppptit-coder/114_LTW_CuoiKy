@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import { notFound, errorHandler } from "./middleware/errorHandler.js";
+import repairRoutes from "./routes/repairRoutes.js";
 
 dotenv.config();
 
@@ -17,6 +18,7 @@ app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
 });
 app.use("/api/auth", authRoutes);
+app.use("/api/repairs", repairRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
