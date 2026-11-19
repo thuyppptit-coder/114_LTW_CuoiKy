@@ -33,9 +33,9 @@ export const createRepair = asyncHandler(async (req, res) => {
 
 // GET /api/repairs/mine  (tenant): chỉ yêu cầu của chính mình
 export const getMyRepairs = asyncHandler(async (req, res) => {
-    const repairs = await RepairRequest.find({ tenantId: req.user._id })
-        .populate("roomId")
-        .sort({ createdAt: -1 });
+    const query = RepairRequest.find({ tenantId: req.user._id }).sort({ createdAt: -1 });
+    if (mongoose.models.Room) query.populate("roomId");
+    const repairs = await query;
     res.json({ repairs });
 });
 
@@ -47,13 +47,15 @@ export const getAllRepairs = asyncHandler(async (req, res) => {
     const filter = {};
     if (req.query.status) filter.status = req.query.status;
 
+    const query = RepairRequest.find(filter)
+        .populate("tenantId", "name phone")
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit);
+    if (mongoose.models.Room) query.populate("roomId");
+
     const [repairs, total] = await Promise.all([
-        RepairRequest.find(filter)
-            .populate("tenantId", "name phone")
-            .populate("roomId")
-            .sort({ createdAt: -1 })
-            .skip((page - 1) * limit)
-            .limit(limit),
+        query,
         RepairRequest.countDocuments(filter),
     ]);
 
