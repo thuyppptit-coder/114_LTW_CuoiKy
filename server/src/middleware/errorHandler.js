@@ -27,6 +27,8 @@ export const errorHandler = (err, req, res, next) => {
         message = "Token không hợp lệ hoặc đã hết hạn";
     } else if (err.name === "MulterError") {
         statusCode = 400;
+        if (err.code === "LIMIT_FILE_SIZE") message = "Mỗi ảnh tối đa 2MB";
+        else if (err.code === "LIMIT_FILE_COUNT" || err.code === "LIMIT_UNEXPECTED_FILE") message = "Tối đa 3 ảnh";
     }
 
     if (statusCode === 500) console.error(err);
