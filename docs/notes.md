@@ -57,13 +57,22 @@
   - Quên khai báo phục vụ tệp tĩnh `app.use('/uploads', express.static(...))` trong `server/src/index.js` hoặc thiếu tiền tố `http://localhost:5000` ở thuộc tính `src` của thẻ `<img>`.
   - Khai báo route con trong `App.jsx` nhưng quên đặt `<Outlet />` trong `OwnerArea.jsx` hoặc `TenantArea.jsx` khiến giao diện không hiển thị trang con khi chuyển mục.
 
-### 5.3. Tòa nhà, Phòng & Hợp đồng (Đặng Phương Thúy bổ sung)
+### 5.3. Thành phần dùng chung & Tối ưu gọi API (Phạm Phương Thúy)
+- **Chức năng chính**: Xây dựng 3 thành phần dùng chung (`Modal`, `Pagination`, custom hook `useFetch`) và áp dụng vào trang quản lý sửa chữa để lọc, phân trang, xem chi tiết và hủy request cũ.
+- **Tệp liên quan**: `Modal.jsx`, `Pagination.jsx`, `useFetch.js`, `api.js`, `owner/Repairs.jsx`, `tenant/Repairs.jsx`.
+- **Luồng xử lý**: State lọc/phân trang quản lý ở component cha (`owner/Repairs.jsx`) → tạo chuỗi truy vấn `path` → truyền vào `useFetch(path)` → gọi API qua `api.js` → trả về `data` → render danh sách. Hai component `Pagination` và `Modal` chỉ nhận dữ liệu qua `props` và báo sự kiện ngược lại component cha thông qua hàm `callback`.
+- **Lỗi thường gặp**:
+  - Quên hàm cleanup (`AbortController.abort()`) trong `useFetch` khiến các request cũ phản hồi chậm ghi đè dữ liệu lên request mới nhất.
+  - Tạo chuỗi hoặc object `path` mới sau mỗi lần render mà không bọc `useMemo` khiến `useEffect` trong `useFetch` chạy liên tục gây vòng lặp gọi API vô hạn.
+  - `Modal` đăng ký lắng nghe sự kiện bàn phím (`Escape`) nhưng quên gỡ bỏ `removeEventListener` trong hàm cleanup khi đóng modal.
+
+### 5.4. Tòa nhà, Phòng & Hợp đồng (Đặng Phương Thúy bổ sung)
 - **Chức năng chính**: (B điền tiếp)
 - **Tệp liên quan**: (B điền tiếp)
 - **Luồng xử lý**: (B điền tiếp)
 - **Lỗi thường gặp**: (B điền tiếp)
 
-### 5.4. Hóa đơn, Thanh toán & Dashboard (Tống Thị Vân Anh bổ sung)
+### 5.5. Hóa đơn, Thanh toán & Dashboard (Tống Thị Vân Anh bổ sung)
 - **Chức năng chính**: (C điền tiếp)
 - **Tệp liên quan**: (C điền tiếp)
 - **Luồng xử lý**: (C điền tiếp)
