@@ -1,53 +1,46 @@
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import api from "../../services/api";
+import useFetch from "../../hooks/useFetch";
 import Button from "../../components/Button";
 import Badge from "../../components/Badge";
+import Modal from "../../components/Modal";
+import Pagination from "../../components/Pagination";
 import { STATUS_LABELS, NEXT_STATUS, NEXT_LABELS } from "../../utils/repairStatus";
 import { imageUrl } from "../../utils/imageUrl";
 
 const STATUS_COLORS = { new: "blue", in_progress: "yellow", done: "green" };
 
 const Repairs = () => {
-    const [repairs, setRepairs] = useState([]);
-    const [status, setStatus] = useState(""); // bộ lọc: rỗng = tất cả
+    const [status, setStatus] = useState("");
     const [page, setPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
+    const [confirming, setConfirming] = useState(null);
+    const [actionError, setActionError] = useState("");
 
-    useEffect(() => {
-        const load = async () => {
-            setLoading(true);
-            try {
-                const query = new URLSearchParams({ page, limit: 10 });
-                if (status) query.set("status", status);
-                const data = await api(`/repairs?${query}`);
-                setRepairs(data.repairs);
-                setTotalPages(data.totalPages);
-            } catch (err) {
-                setError(err.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-        load();
+    const path = useMemo(() => {
+        const query = new URLSearchParams({ page, limit: 10 });
+        if (status) query.set("status", status);
+        return `/repairs?${query}`;
     }, [status, page]);
+
+    const { data, loading, error, refetch } = useFetch(path);
+    const repairs = data?.repairs ?? [];
 
     const handleFilter = (e) => {
         setStatus(e.target.value);
-        setPage(1); // đổi bộ lọc thì về trang 1
+        setPage(1);
     };
 
-    const handleNext = async (repair) => {
+    const handleConfirm = async () => {
         try {
-            const { repair: updated } = await api(`/repairs/${repair._id}/status`, {
+            await api(`/repairs/${confirming._id}/status`, {
                 method: "PATCH",
-                body: { status: NEXT_STATUS[repair.status] },
+                body: { status: NEXT_STATUS[confirming.status] },
             });
-            // Thay đúng 1 phần tử, không sửa trực tiếp mảng cũ
-            setRepairs((prev) => prev.map((r) => (r._id === repair._id ? { ...r, status: updated.status } : r)));
+            setConfirming(null);
+            refetch();
         } catch (err) {
-            setError(err.message);
+            setActionError(err.message);
+            setConfirming(null);
         }
     };
 
@@ -68,7 +61,7 @@ const Repairs = () => {
                 </select>
             </div>
 
-            {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+            {(error || actionError) && <p className="mb-3 text-sm text-red-600">{error || actionError}</p>}
 
             {loading ? (
                 <p>Đang tải...</p>
@@ -98,7 +91,7 @@ const Repairs = () => {
                                 </div>
                             )}
                             {NEXT_STATUS[r.status] && (
-                                <Button className="mt-3" onClick={() => handleNext(r)}>
+                                <Button className="mt-3" onClick={() => setConfirming(r)}>
                                     {NEXT_LABELS[r.status]}
                                 </Button>
                             )}
@@ -107,12 +100,18 @@ const Repairs = () => {
                 </ul>
             )}
 
-            {/* Tạm dùng nút đơn giản, mục 5 sẽ thay bằng component Pagination */}
-            <div className="mt-4 flex items-center gap-2">
-                <Button variant="secondary" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Trước</Button>
-                <span className="text-sm">Trang {page} / {totalPages}</span>
-                <Button variant="secondary" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>Sau</Button>
-            </div>
+            <Pagination page={page} totalPages={data?.totalPages ?? 1} onPageChange={setPage} />
+
+            <Modal open={!!confirming} title="Xác nhận" onClose={() => setConfirming(null)}>
+                <p className="mb-4">
+                    Chuyển yêu cầu "{confirming?.title}" sang trạng thái{" "}
+                    <strong>{confirming && STATUS_LABELS[NEXT_STATUS[confirming.status]]}</strong>?
+                </p>
+                <div className="flex justify-end gap-2">
+                    <Button variant="secondary" onClick={() => setConfirming(null)}>Hủy</Button>
+                    <Button onClick={handleConfirm}>Xác nhận</Button>
+                </div>
+            </Modal>
         </div>
     );
 };
