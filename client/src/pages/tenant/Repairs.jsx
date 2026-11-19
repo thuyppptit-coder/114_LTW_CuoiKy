@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import api from "../../services/api";
+import useFetch from "../../hooks/useFetch";
 import InputField from "../../components/InputField";
 import Button from "../../components/Button";
 import Badge from "../../components/Badge";
@@ -20,28 +21,13 @@ const validate = ({ title }, files) => {
 };
 
 const Repairs = () => {
-    const [repairs, setRepairs] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const { data, loading, refetch } = useFetch("/repairs/mine");
+    const repairs = data?.repairs ?? [];
     const [form, setForm] = useState({ title: "", description: "" });
     const [files, setFiles] = useState([]);
     const [errors, setErrors] = useState({});
     const [serverError, setServerError] = useState("");
     const [submitting, setSubmitting] = useState(false);
-
-    const loadRepairs = async () => {
-        try {
-            const { repairs } = await api("/repairs/mine");
-            setRepairs(repairs);
-        } catch (err) {
-            setServerError(err.message);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        loadRepairs();
-    }, []);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -54,7 +40,6 @@ const Repairs = () => {
         setErrors(found);
         if (Object.keys(found).length > 0) return;
 
-        // Có file thì phải gửi bằng FormData, không dùng JSON
         const body = new FormData();
         body.append("title", form.title);
         body.append("description", form.description);
@@ -66,8 +51,8 @@ const Repairs = () => {
             await api("/repairs", { method: "POST", body, isFormData: true });
             setForm({ title: "", description: "" });
             setFiles([]);
-            e.target.reset(); // xóa ô chọn file
-            await loadRepairs();
+            e.target.reset();
+            refetch();
         } catch (err) {
             setServerError(err.message);
         } finally {
