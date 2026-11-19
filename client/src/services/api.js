@@ -1,7 +1,7 @@
 const API_URL = import.meta.env.VITE_API_URL;
 
 // Gọi API, tự gắn token, ném lỗi kèm message từ server
-const api = async (path, { method = "GET", body, isFormData = false } = {}) => {
+const api = async (path, { method = "GET", body, isFormData = false, signal } = {}) => {
     const token = localStorage.getItem("token");
 
     const headers = {};
@@ -12,6 +12,7 @@ const api = async (path, { method = "GET", body, isFormData = false } = {}) => {
         method,
         headers,
         body: body ? (isFormData ? body : JSON.stringify(body)) : undefined,
+        signal,
     });
 
     const data = await res.json().catch(() => ({}));
