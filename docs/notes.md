@@ -32,3 +32,39 @@
   - Đặng Phương Thúy: nhánh quản lý tòa nhà, phòng, hợp đồng
   - Tống Thị Vân Anh: nhánh quản lý hóa đơn, thanh toán, dashboard
 - **Lưu ý trước khi code**: Luôn chạy `git pull origin main` về nhánh cá nhân trước khi bắt đầu tính năng mới để tránh xung đột (conflict).
+
+---
+
+## 5. Chi tiết luồng xử lý & Lưu ý kỹ thuật theo phân hệ
+
+### 5.1. Xác thực, Phân quyền & Giao diện nền (Phạm Phương Thúy)
+- **Chức năng chính**: Đăng nhập/đăng ký từ giao diện, duy trì trạng thái đăng nhập sau khi tải lại trang (F5), phân quyền truy cập route theo vai trò (`owner` / `tenant`), chuyển đổi chế độ giao diện Sáng/Tối.
+- **Tệp liên quan**: `api.js`, `AuthContext.jsx`, `ProtectedRoute.jsx`, `Layout.jsx`, `App.jsx`, `ThemeContext.jsx`, `useLocalStorage.js`.
+- **Luồng xử lý**: Mở ứng dụng → `AuthProvider` đọc `token` từ `localStorage` → gọi `GET /api/auth/me` → xác thực thành công và lưu thông tin `user` → `ProtectedRoute` kiểm tra quyền hợp lệ → `Layout` hiển thị `<Outlet />` (trang con tương ứng).
+- **Lỗi thường gặp**:
+  - Thiếu kiểm tra trạng thái `loading` trong `ProtectedRoute` khiến người dùng bị chuyển hướng nhầm về `/login` khi bấm F5 lúc API `/auth/me` chưa phản hồi xong.
+  - Sắp xếp sai thứ tự bọc các Provider trong `main.jsx` hoặc `App.jsx` (gọi `useAuth()` ngoài phạm vi của `AuthProvider`).
+  - Lỗi **CORS** do giá trị `CLIENT_URL` trong `server/.env` không khớp với địa chỉ chạy của Vite (`http://localhost:5173`).
+
+### 5.2. Yêu cầu sửa chữa & Khu vực làm việc (Phạm Phương Thúy)
+- **Chức năng chính**: Người thuê gửi yêu cầu sửa chữa kèm ảnh minh họa và theo dõi tiến độ xử lý; chủ trọ điều hướng qua Sidebar khu vực quản lý, xem toàn bộ danh sách sự cố và cập nhật trạng thái (`Mới` → `Đang xử lý` → `Xong`).
+- **Tệp liên quan**: `RepairRequest.js`, `upload.js`, `repairController.js`, `repairRoutes.js`, `index.js`, `OwnerArea.jsx`, `TenantArea.jsx`, `OwnerRepairs.jsx`, `TenantRepairs.jsx`.
+- **Luồng xử lý**:
+  - **Người thuê**: Nhập thông tin sự cố và chọn ảnh → đóng gói dữ liệu bằng `FormData` → gọi `POST /api/repairs` → `protect` & `authorize('tenant')` xác thực quyền → `multer` lưu tệp ảnh vào `server/uploads` → lưu bản ghi vào MongoDB → tải lại danh sách từ `GET /api/repairs/my`.
+  - **Chủ trọ**: Truy cập `/owner/repairs` từ Sidebar của `OwnerArea` → gọi `GET /api/repairs` lấy toàn bộ danh sách → chọn trạng thái mới → gọi `PATCH /api/repairs/:id/status` cập nhật cơ sở dữ liệu và giao diện.
+- **Lỗi thường gặp**:
+  - Gửi kèm tệp ảnh từ Client nhưng quên sử dụng `FormData` (hoặc ép cứng header `Content-Type: application/json`) khiến `multer` không nhận được `req.file`.
+  - Quên khai báo phục vụ tệp tĩnh `app.use('/uploads', express.static(...))` trong `server/src/index.js` hoặc thiếu tiền tố `http://localhost:5000` ở thuộc tính `src` của thẻ `<img>`.
+  - Khai báo route con trong `App.jsx` nhưng quên đặt `<Outlet />` trong `OwnerArea.jsx` hoặc `TenantArea.jsx` khiến giao diện không hiển thị trang con khi chuyển mục.
+
+### 5.3. Tòa nhà, Phòng & Hợp đồng (Đặng Phương Thúy bổ sung)
+- **Chức năng chính**: (B điền tiếp)
+- **Tệp liên quan**: (B điền tiếp)
+- **Luồng xử lý**: (B điền tiếp)
+- **Lỗi thường gặp**: (B điền tiếp)
+
+### 5.4. Hóa đơn, Thanh toán & Dashboard (Tống Thị Vân Anh bổ sung)
+- **Chức năng chính**: (C điền tiếp)
+- **Tệp liên quan**: (C điền tiếp)
+- **Luồng xử lý**: (C điền tiếp)
+- **Lỗi thường gặp**: (C điền tiếp)
