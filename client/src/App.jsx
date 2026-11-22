@@ -9,6 +9,7 @@ import TenantArea from "./pages/TenantArea";
 import NotFound from "./pages/NotFound";
 import TenantRepairs from "./pages/tenant/Repairs";
 import OwnerRepairs from "./pages/owner/Repairs";
+import OwnerInvoices from "./pages/owner/Invoices"; 
 
 const App = () => (
   <Routes>
@@ -23,6 +24,8 @@ const App = () => (
         <Route path="owner" element={<OwnerArea />}>
           <Route index element={<p>Tổng quan (C làm dashboard)</p>} />
           <Route path="repairs" element={<OwnerRepairs />} />
+          {/* THÊM: đường dẫn /owner/invoices */}
+          <Route path="invoices" element={<OwnerInvoices />} />
         </Route>
       </Route>
 
