@@ -80,3 +80,56 @@ export const createInvoice = asyncHandler(async (req, res) => {
 
     res.status(201).json({ invoice });
 });
+
+
+
+export const getInvoices = asyncHandler(async (req, res) => {
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const limit = Math.min(Math.max(Number(req.query.limit) || 10, 1), 50);
+
+    const filter = {};
+    if (req.query.month) filter.month = req.query.month;
+    if (req.query.status) filter.status = req.query.status;
+
+    const query = Invoice.find(filter)
+        .sort({ month: -1, createdAt: -1 })
+        .skip((page - 1) * limit)
+        .limit(limit);
+    if (mongoose.models.Room) query.populate("roomId");
+
+    const [invoices, total] = await Promise.all([
+        query,
+        Invoice.countDocuments(filter),
+    ]);
+
+    res.json({ invoices, page, totalPages: Math.ceil(total / limit), total });
+});
+
+// PATCH /api/invoices/:id/issue  (owner): draft -> issued
+export const issueInvoice = asyncHandler(async (req, res) => {
+    const invoice = await Invoice.findById(req.params.id);
+    if (!invoice) throw new AppError("Không tìm thấy hóa đơn", 404);
+
+    if (invoice.status !== "draft") {
+        throw new AppError("Chỉ phát hành được hóa đơn đang ở trạng thái nháp", 400);
+    }
+
+    invoice.status = "issued";
+    await invoice.save();
+    res.json({ invoice });
+});
+
+// PATCH /api/invoices/:id/pay  (owner): issued -> paid
+export const payInvoice = asyncHandler(async (req, res) => {
+    const invoice = await Invoice.findById(req.params.id);
+    if (!invoice) throw new AppError("Không tìm thấy hóa đơn", 404);
+
+    if (invoice.status !== "issued") {
+        throw new AppError("Chỉ thu tiền được hóa đơn đã phát hành", 400);
+    }
+
+    invoice.status = "paid";
+    invoice.paidAt = new Date();
+    await invoice.save();
+    res.json({ invoice });
+});
