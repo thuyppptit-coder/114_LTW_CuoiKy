@@ -1,3 +1,4 @@
+import AppError from "./AppError.js";
 export const calcInvoice = ({
     roomFee,
     serviceFee,
@@ -9,10 +10,10 @@ export const calcInvoice = ({
     waterNew,
 }) => {
     if (electricNew < electricOld) {
-        throw new Error("Chỉ số điện mới không được nhỏ hơn chỉ số cũ");
+        throw new AppError("Chỉ số điện mới không được nhỏ hơn chỉ số cũ", 400);
     }
     if (waterNew < waterOld) {
-        throw new Error("Chỉ số nước mới không được nhỏ hơn chỉ số cũ");
+        throw new AppError("Chỉ số nước mới không được nhỏ hơn chỉ số cũ", 400);
     }
 
     const electricFee = (electricNew - electricOld) * electricPrice;
