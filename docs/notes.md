@@ -1,10 +1,10 @@
 # Ghi chú kỹ thuật & Quy ước phát triển (Đề 4: Quản lý nhà trọ)
 
 ## 1. Cấu trúc thư mục & Môi trường chạy
-- **`/server`**: Backend Node.js + Express + MongoDB Atlas (chạy mặc định ở cổng `5000`).
+- **`/server` (mã nguồn chính trong `server/src/`)**: Backend Node.js + Express + MongoDB Atlas (chạy mặc định ở cổng `5000`).
   - Lệnh khởi chạy phát triển: `npm run dev`
   - Lệnh nạp dữ liệu mẫu: `npm run seed`
-- **`/client`**: Frontend React + Vite + Tailwind CSS + Redux Toolkit (chạy mặc định ở cổng `5173`).
+- **`/client` (mã nguồn chính trong `client/src/`)**: Frontend React + Vite + Tailwind CSS + Redux Toolkit (chạy mặc định ở cổng `5173`).
   - Lệnh khởi chạy giao diện: `npm run dev`
 - **Biến môi trường (`.env`)**:
   - Tuyệt đối **không** commit file `.env` lên GitHub.
@@ -14,9 +14,10 @@
 - **Định dạng phản hồi**: Thống nhất trả về JSON từ các controller, sử dụng `asyncHandler` để bọc các hàm bất đồng bộ và đẩy lỗi về middleware `errorHandler` tập trung.
 - **Xác thực & Phân quyền**:
   - Client gửi JWT qua Header: `Authorization: Bearer <token>`.
-  - Middleware `protect` giải mã token và gắn thông tin người dùng vào `req.user`.
+  - Middleware `protect` giải mã token và gắn thông tin người dùng (`{ id, role }`) vào `req.user`.
   - Middleware `authorize('owner')` hoặc `authorize('tenant')` dùng để giới hạn quyền truy cập theo vai trò.
 - **Upload ảnh**: Ảnh minh họa (ví dụ ảnh sự cố sửa chữa) được lưu qua `multer` vào thư mục `server/uploads` và phục vụ tĩnh qua đường dẫn `/uploads/<tên-file>`.
+- **Quy ước dữ liệu**: Chi tiết cấu trúc collection, enum (`available`/`occupied`/`maintenance`, `draft`/`issued`/`paid`, `new`/`in_progress`/`done`, `active`/`ended`) và danh sách API tuân thủ tuyệt đối theo file `docs/schema.md`.
 
 ## 3. Quy ước Giao diện & Luồng điều hướng (Frontend)
 - **Phân luồng sau đăng nhập**:
@@ -28,9 +29,9 @@
 ## 4. Quy trình Git của nhóm
 - **Nhánh chung**: `main` (chỉ merge code đã chạy ổn định, không lỗi).
 - **Nhánh cá nhân**:
-  - Phạm Phương Thúy: `pham-thuy/auth`
-  - Đặng Phương Thúy: nhánh quản lý tòa nhà, phòng, hợp đồng
-  - Tống Thị Vân Anh: nhánh quản lý hóa đơn, thanh toán, dashboard
+  - Phạm Phương Thúy (Phần A – Nền tảng, xác thực, người thuê & sửa chữa): `pham-thuy/auth`
+  - Tống Thị Vân Anh (Phần B – Dãy trọ, phòng, hợp đồng & trang khách): `van-anh/rooms`
+  - Đặng Phương Thúy (Phần C – Chỉ số điện nước, hóa đơn & dashboard): `feature/invoices`
 - **Lưu ý trước khi code**: Luôn chạy `git pull origin main` về nhánh cá nhân trước khi bắt đầu tính năng mới để tránh xung đột (conflict).
 
 ---
@@ -47,7 +48,7 @@
   - Lỗi **CORS** do giá trị `CLIENT_URL` trong `server/.env` không khớp với địa chỉ chạy của Vite (`http://localhost:5173`).
 
 ### 5.2. Yêu cầu sửa chữa & Khu vực làm việc (Phạm Phương Thúy)
-- **Chức năng chính**: Người thuê gửi yêu cầu sửa chữa kèm ảnh minh họa và theo dõi tiến độ xử lý; chủ trọ điều hướng qua Sidebar khu vực quản lý, xem toàn bộ danh sách sự cố và cập nhật trạng thái (`Mới` → `Đang xử lý` → `Xong`).
+- **Chức năng chính**: Người thuê gửi yêu cầu sửa chữa kèm ảnh minh họa và theo dõi tiến độ xử lý; chủ trọ điều hướng qua Sidebar khu vực quản lý, xem toàn bộ danh sách sự cố và cập nhật trạng thái (`new` → `in_progress` → `done`).
 - **Tệp liên quan**: `RepairRequest.js`, `upload.js`, `repairController.js`, `repairRoutes.js`, `index.js`, `OwnerArea.jsx`, `TenantArea.jsx`, `OwnerRepairs.jsx`, `TenantRepairs.jsx`.
 - **Luồng xử lý**:
   - **Người thuê**: Nhập thông tin sự cố và chọn ảnh → đóng gói dữ liệu bằng `FormData` → gọi `POST /api/repairs` → `protect` & `authorize('tenant')` xác thực quyền → `multer` lưu tệp ảnh vào `server/uploads` → lưu bản ghi vào MongoDB → tải lại danh sách từ `GET /api/repairs/my`.
@@ -58,22 +59,32 @@
   - Khai báo route con trong `App.jsx` nhưng quên đặt `<Outlet />` trong `OwnerArea.jsx` hoặc `TenantArea.jsx` khiến giao diện không hiển thị trang con khi chuyển mục.
 
 ### 5.3. Thành phần dùng chung & Tối ưu gọi API (Phạm Phương Thúy)
-- **Chức năng chính**: Xây dựng 3 thành phần dùng chung (`Modal`, `Pagination`, custom hook `useFetch`) và áp dụng vào trang quản lý sửa chữa để lọc, phân trang, xem chi tiết và hủy request cũ.
-- **Tệp liên quan**: `Modal.jsx`, `Pagination.jsx`, `useFetch.js`, `api.js`, `owner/Repairs.jsx`, `tenant/Repairs.jsx`.
+- **Chức năng chính**: Xây dựng các thành phần dùng chung (`Button`, `InputField`, `Badge`, `Modal`, `Pagination`, custom hook `useFetch`) và áp dụng vào trang quản lý sửa chữa để lọc, phân trang, xem chi tiết và hủy request cũ.
+- **Tệp liên quan**: `Button.jsx`, `InputField.jsx`, `Badge.jsx`, `Modal.jsx`, `Pagination.jsx`, `useFetch.js`, `api.js`, `owner/Repairs.jsx`, `tenant/Repairs.jsx`.
 - **Luồng xử lý**: State lọc/phân trang quản lý ở component cha (`owner/Repairs.jsx`) → tạo chuỗi truy vấn `path` → truyền vào `useFetch(path)` → gọi API qua `api.js` → trả về `data` → render danh sách. Hai component `Pagination` và `Modal` chỉ nhận dữ liệu qua `props` và báo sự kiện ngược lại component cha thông qua hàm `callback`.
 - **Lỗi thường gặp**:
   - Quên hàm cleanup (`AbortController.abort()`) trong `useFetch` khiến các request cũ phản hồi chậm ghi đè dữ liệu lên request mới nhất.
   - Tạo chuỗi hoặc object `path` mới sau mỗi lần render mà không bọc `useMemo` khiến `useEffect` trong `useFetch` chạy liên tục gây vòng lặp gọi API vô hạn.
   - `Modal` đăng ký lắng nghe sự kiện bàn phím (`Escape`) nhưng quên gỡ bỏ `removeEventListener` trong hàm cleanup khi đóng modal.
 
-### 5.4. Tòa nhà, Phòng & Hợp đồng (Đặng Phương Thúy bổ sung)
-- **Chức năng chính**: (B điền tiếp)
-- **Tệp liên quan**: (B điền tiếp)
-- **Luồng xử lý**: (B điền tiếp)
-- **Lỗi thường gặp**: (B điền tiếp)
+### 5.4. Dãy trọ, Phòng, Hợp đồng & Trang khách (Tống Thị Vân Anh)
+- **Chức năng chính**: Quản lý CRUD dãy trọ và phòng trọ (lọc theo giá, diện tích, trạng thái, phân trang ở server), lập và kết thúc hợp đồng thuê phòng (tự động đổi trạng thái phòng và chặn lập trùng hợp đồng hiệu lực), trang danh sách phòng trống cho khách vãng lai kèm form để lại liên hệ. Sử dụng Redux Toolkit (`createSlice`, `configureStore`, `useSelector`, `useDispatch`) để quản lý state phòng và hợp đồng.
+- **Tệp liên quan**: `Building.js`, `Room.js`, `Contract.js`, `Contact.js`, `buildingController.js`, `roomController.js`, `contractController.js`, `contactController.js`, `useDebounce.js`, các slice trong `client/src/store/`, `GuestRoomsPage.jsx`, `OwnerContractsPage.jsx`.
+- **Luồng xử lý**:
+  - **Tạo/Kết thúc hợp đồng**: Chủ trọ gọi `POST /api/contracts` → server kiểm tra phòng có hợp đồng `active` chưa (nếu có trả `409`) → tạo hợp đồng mới và cập nhật `Room.status` sang `occupied`. Khi gọi `PATCH /api/contracts/:id/end` → cập nhật `Contract.status = 'ended'`, ghi `endedAt` và trả `Room.status` về `available`.
+  - **Trang khách**: Gõ ô tìm kiếm/lọc → `useDebounce` trì hoãn gọi API `GET /api/rooms?status=available&...` → hiển thị danh sách phòng trống.
+- **Lỗi thường gặp**:
+  - Hai người cùng tạo hợp đồng cho một phòng cùng lúc nếu thiếu partial unique index `{ roomId: 1 }` với `partialFilterExpression: { status: "active" }` trong MongoDB.
+  - Đặt tên file store trùng hoặc lệch đường dẫn khi ghép nhánh vào `main` (cần thống nhất import duy nhất 1 `store` tại `main.jsx`).
 
-### 5.5. Hóa đơn, Thanh toán & Dashboard (Tống Thị Vân Anh bổ sung)
-- **Chức năng chính**: (C điền tiếp)
-- **Tệp liên quan**: (C điền tiếp)
-- **Luồng xử lý**: (C điền tiếp)
-- **Lỗi thường gặp**: (C điền tiếp)
+### 5.5. Chỉ số điện nước, Hóa đơn & Dashboard (Đặng Phương Thúy)
+- **Chức năng chính**: Nhập chỉ số điện nước hàng loạt theo tháng cho các phòng đang thuê (validate từng dòng trên giao diện và kiểm tra lại ở server), tính tự động tiền hóa đơn kèm snapshot đơn giá, quản lý vòng đời hóa đơn (`draft` → `issued` → `paid`), xuất hóa đơn PDF, thống kê Dashboard chủ trọ (số phòng trống, danh sách phòng nợ tiền, biểu đồ doanh thu theo tháng dùng MongoDB Aggregation Pipeline).
+- **Tệp liên quan**: `Invoice.js`, `invoiceController.js`, `invoiceRoutes.js`, `statsController.js`, `statsRoutes.js`, `ReadingRow.jsx`, `StatCard.jsx`, `RevenueChart.jsx`, trang nhập chỉ số hàng loạt, trang danh sách hóa đơn và Dashboard chủ trọ.
+- **Luồng xử lý**:
+  - **Nhập chỉ số & lập hóa đơn**: Chủ trọ chọn tháng (`YYYY-MM`) và nhập `electricNew`, `waterNew` trên bảng → validate `new >= old` từng dòng tại `ReadingRow` → gửi `POST /api/invoices/bulk` → server lấy hợp đồng `active` và đơn giá từ `Building` (snapshot `electricPrice`, `waterPrice`, `roomFee`, `serviceFee`), tính tổng tiền `total` và lưu trạng thái `draft` (chặn trùng `(roomId, month)` trả `409`).
+  - **Phát hành & Thu tiền**: Chủ trọ bấm phát hành (`PATCH /api/invoices/:id/issue`) để chuyển sang `issued` (lúc này người thuê mới thấy qua `GET /api/invoices/mine`) và bấm xác nhận thu tiền (`PATCH /api/invoices/:id/pay`) để chuyển sang `paid`.
+  - **Dashboard & Biểu đồ**: Gọi `GET /api/stats/dashboard` và `GET /api/stats/revenue?year=YYYY` → chạy Aggregation Pipeline (`$match`, `$group`, `$lookup`, `$sort`) gom doanh thu các hóa đơn `paid` và lọc các phòng đang nợ (`status: "issued"`).
+- **Lỗi thường gặp**:
+  - Tin tưởng dữ liệu tiền gửi từ client thay vì tự truy vấn `Contract.rent` và `Building` ở server để tính toán và lưu snapshot.
+  - Cho phép sửa chỉ số điện nước khi hóa đơn đã chuyển sang `issued` hoặc `paid` (chỉ được sửa khi còn ở trạng thái `draft`).
+  - Sai định dạng chuỗi tháng `month` (bắt buộc chuẩn `YYYY-MM`, ví dụ `"2026-11"`, để `$sort` và lọc theo năm hoạt động chính xác).
