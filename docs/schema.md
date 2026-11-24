@@ -1,81 +1,163 @@
 # Schema và API chung của nhóm (Đề 4: Quản lý nhà trọ)
 
-## 1. Tài khoản & Phân quyền (Phạm Phương Thúy)
-- **Model `User` (Collection `users`)**:
-  - `name`: String (required)
-  - `email`: String (required, unique)
-  - `password`: String (required, đã mã hóa bcrypt)
-  - `phone`: String
-  - `role`: String (`"owner"` | `"tenant"`, mặc định `"tenant"`)
-  - `createdAt`, `updatedAt`: Date
-- **API Auth**:
-  - `POST /api/auth/register` - Đăng ký tài khoản mới
-  - `POST /api/auth/login` - Đăng nhập, trả về JWT token
-  - `GET /api/auth/me` - Lấy thông tin tài khoản hiện tại (yêu cầu Bearer token)
+## 0. Phân công
 
-## 2. Yêu cầu sửa chữa (Phạm Phương Thúy)
-- **Model `RepairRequest` (Collection `repairRequests`)**:
-  - `tenantId`: ObjectId (ref: `User`)
-  - `roomId`: ObjectId (ref: `Room`)
-  - `title`: String (required)
-  - `description`: String
-  - `image`: String (đường dẫn ảnh upload)
-  - `status`: String (`"Mới"` | `"Đang xử lý"` | `"Xong"`, mặc định `"Mới"`)
-  - `createdAt`, `updatedAt`: Date
-- **API Repair**:
-  - `POST /api/repairs` - Người thuê gửi yêu cầu sửa chữa kèm ảnh
-  - `GET /api/repairs/my` - Người thuê xem danh sách yêu cầu của mình
-  - `GET /api/repairs` - Chủ trọ xem tất cả yêu cầu
-  - `PATCH /api/repairs/:id/status` - Chủ trọ cập nhật trạng thái (`Mới` -> `Đang xử lý` -> `Xong`)
+| Phần | Người | Phạm vi dữ liệu |
+|---|---|---|
+| A | Phạm Phương Thúy | `User`, `RepairRequest`, API hóa đơn phía người thuê |
+| B | Tống Thị Vân Anh | `Building`, `Room`, `Contract`, `Contact` |
+| C | Đặng Phương Thúy | `Invoice`, thống kê (Aggregation) |
 
-## 3. Tòa nhà, Phòng & Hợp đồng (Đặng Phương Thúy)
-- **Model `Building` (Collection `buildings`)**:
-  - `name`: String (required)
-  - `address`: String (required)
-  - `electricPrice`: Number (đơn giá điện)
-  - `waterPrice`: Number (đơn giá nước)
-  - `serviceFee`: Number (phí dịch vụ chung)
-  - `createdAt`, `updatedAt`: Date
-- **Model `Room` (Collection `rooms`)**:
-  - `buildingId`: ObjectId (ref: `Building`, required)
-  - `name`: String (required)
-  - `price`: Number (giá thuê phòng)
-  - `area`: Number (diện tích phòng)
-  - `status`: String (`"available"` | `"occupied"` | `"maintenance"`, mặc định `"available"`)
-  - `createdAt`, `updatedAt`: Date
-- **Model `Contract` (Collection `contracts`)**:
-  - `tenantId`: ObjectId (ref: `User`, required)
-  - `roomId`: ObjectId (ref: `Room`, required)
-  - `startDate`: Date (required)
-  - `endDate`: Date (required)
-  - `rent`: Number (giá thuê chốt trên hợp đồng)
-  - `deposit`: Number (tiền cọc)
-  - `status`: String (`"active"` | `"ended"`, mặc định `"active"`)
-  - `createdAt`, `updatedAt`: Date
+## 1. Quy ước chung
 
-## 4. Hóa đơn & Thanh toán (Tống Thị Vân Anh)
-- **Model `Invoice` (Collection `invoices`)**:
-  - `roomId`: ObjectId (ref: `Room`, required)
-  - `month`: String (định dạng `"YYYY-MM"`, required)
-  - `electricOld`: Number (chỉ số điện cũ)
-  - `electricNew`: Number (chỉ số điện mới)
-  - `waterOld`: Number (chỉ số nước cũ)
-  - `waterNew`: Number (chỉ số nước mới)
-  - `electricPrice`: Number (chốt đơn giá điện tại thời điểm lập hóa đơn)
-  - `waterPrice`: Number (chốt đơn giá nước tại thời điểm lập hóa đơn)
-  - `roomFee`: Number (tiền phòng)
-  - `electricFee`: Number (tiền điện)
-  - `waterFee`: Number (tiền nước)
-  - `serviceFee`: Number (phí dịch vụ)
-  - `total`: Number (tổng tiền thanh toán)
-  - `status`: String (`"draft"` | `"issued"` | `"paid"`, mặc định `"draft"`)
-  - `paidAt`: Date (thời điểm thanh toán)
-  - `createdAt`, `updatedAt`: Date
-  - **Index**: Unique index kết hợp `(roomId, month)` để mỗi phòng chỉ có 1 hóa đơn trong 1 tháng.
+- Mọi model dùng `{ timestamps: true }` (tự có `createdAt`, `updatedAt`).
+- Tên model PascalCase, khớp tên file trong `server/src/models/`.
+- Mongoose tự đặt tên collection thành chữ thường, số nhiều (`RepairRequest` -> `repairrequests`). Muốn đúng như báo cáo thì khai báo `collection: 'repairRequests'` trong schema, hoặc ghi đúng tên thực tế vào báo cáo.
+- **Giá trị enum lưu bằng mã tiếng Anh, giao diện tự map sang tiếng Việt.** Không trộn tiếng Việt và tiếng Anh trong DB.
 
----
+| Mã trong DB | Hiển thị |
+|---|---|
+| Room: `available` / `occupied` / `maintenance` | Trống / Đang thuê / Đang sửa |
+| Repair: `new` / `in_progress` / `done` | Mới / Đang xử lý / Xong |
+| Contract: `active` / `ended` | Đang hiệu lực / Đã kết thúc |
+| Invoice: `draft` / `issued` / `paid` | Nháp / Đã phát hành / Đã thu |
 
-## 5. Quy ước nghiệp vụ & Đặt tên chung
-- **Tên Model & Tệp**: Đặt đúng chuẩn PascalCase khớp với tên tệp trong `server/src/models/`: `User`, `RepairRequest`, `Building`, `Room`, `Contract`, `Invoice`.
-- **Hiển thị hóa đơn theo vai trò**: Người thuê (`tenant`) chỉ được xem các hóa đơn có trạng thái `"issued"` (đã phát hành) hoặc `"paid"` (đã thanh toán); trạng thái `"draft"` là bản nháp chỉ chủ trọ (`owner`) mới thấy.
-- **Xác định người thuê của phòng**: Được liên kết thông qua bản ghi `Contract` (đang hiệu lực) ứng với `roomId` và `tenantId` đó.
+- Tiền: số nguyên đơn vị VND, làm tròn ở server.
+- Quan hệ: dùng tham chiếu `_id` (`ref`) giữa các collection; không lồng document vì dữ liệu thay đổi độc lập (giá phòng, người thuê...). Ngoại lệ: Invoice **lưu bản chụp (snapshot)** đơn giá, tiền phòng, phí dịch vụ tại thời điểm lập, để đổi giá sau này không làm sai hóa đơn cũ.
+
+## 2. Tài khoản & Phân quyền (A)
+
+**`User` (`users`)**
+- `name`: String, required
+- `email`: String, required, unique, lowercase
+- `password`: String, required, bcrypt, `select: false`
+- `phone`: String
+- `role`: `"owner"` | `"tenant"`, mặc định `"tenant"`
+
+JWT payload chỉ chứa `{ id, role }`, có `expiresIn`. Không đưa email, password, phone vào payload.
+
+**`RepairRequest` (`repairRequests`)**
+- `tenantId`: ObjectId (ref `User`, required)
+- `roomId`: ObjectId (ref `Room`, required)
+- `title`: String, required
+- `description`: String
+- `image`: String (đường dẫn ảnh upload, Multer)
+- `status`: `"new"` | `"in_progress"` | `"done"`, mặc định `"new"`
+
+Quy tắc: chỉ chuyển trạng thái theo chiều `new -> in_progress -> done`; chuyển sai thứ tự trả 400.
+
+## 3. Dãy trọ, Phòng, Hợp đồng, Liên hệ (B)
+
+**`Building` (`buildings`)**
+- `ownerId`: ObjectId (ref `User`, required), chủ trọ sở hữu dãy
+- `name`: String, required
+- `address`: String, required
+- `electricPrice`: Number, required, >= 0
+- `waterPrice`: Number, required, >= 0
+- `serviceFee`: Number, mặc định 0
+
+**`Room` (`rooms`)**
+- `buildingId`: ObjectId (ref `Building`, required)
+- `name`: String, required
+- `price`: Number, required, >= 0 (giá thuê niêm yết)
+- `area`: Number, required, > 0
+- `status`: `"available"` | `"occupied"` | `"maintenance"`, mặc định `"available"`
+- `description`: String (tùy chọn, hiển thị ở trang khách)
+- **Index**: unique `(buildingId, name)` để không trùng tên phòng trong cùng dãy.
+
+**`Contract` (`contracts`)**
+- `tenantId`: ObjectId (ref `User`, required)
+- `roomId`: ObjectId (ref `Room`, required)
+- `startDate`: Date, required
+- `endDate`: Date, required, phải sau `startDate`
+- `rent`: Number, required (giá thuê chốt trên hợp đồng)
+- `deposit`: Number, mặc định 0
+- `status`: `"active"` | `"ended"`, mặc định `"active"`
+- `endedAt`: Date (thời điểm kết thúc thực tế)
+- **Index**: unique `(roomId)` với `partialFilterExpression: { status: "active" }`, đảm bảo mỗi phòng chỉ có 1 hợp đồng hiệu lực (chặn ngay ở DB, kể cả khi hai request đến cùng lúc). Server vẫn kiểm tra trước để trả 409 có thông báo rõ.
+
+**`Contact` (`contacts`)**: khách chưa đăng nhập để lại thông tin
+- `name`: String, required
+- `phone`: String, required
+- `email`: String
+- `message`: String
+- `roomId`: ObjectId (ref `Room`, tùy chọn, phòng khách quan tâm)
+- `isRead`: Boolean, mặc định `false`
+
+## 4. Hóa đơn & Thống kê (C)
+
+**`Invoice` (`invoices`)**
+- `roomId`: ObjectId (ref `Room`, required)
+- `contractId`: ObjectId (ref `Contract`, required), hợp đồng hiệu lực lúc lập hóa đơn
+- `tenantId`: ObjectId (ref `User`, required), người thuê lúc lập (snapshot)
+- `month`: String, required, đúng định dạng `YYYY-MM` (validate regex `/^\d{4}-(0[1-9]|1[0-2])$/`)
+- `electricOld`, `electricNew`: Number, required, >= 0
+- `waterOld`, `waterNew`: Number, required, >= 0
+- `electricPrice`, `waterPrice`: Number (snapshot từ `Building`)
+- `roomFee`: Number (snapshot từ `Contract.rent`)
+- `serviceFee`: Number (snapshot từ `Building.serviceFee`)
+- `electricFee`: Number = (`electricNew` − `electricOld`) × `electricPrice`
+- `waterFee`: Number = (`waterNew` − `waterOld`) × `waterPrice`
+- `total`: Number = `roomFee` + `electricFee` + `waterFee` + `serviceFee`
+- `status`: `"draft"` | `"issued"` | `"paid"`, mặc định `"draft"`
+- `issuedAt`: Date (lúc phát hành)
+- `paidAt`: Date (lúc thu tiền)
+- **Index**:
+  - unique `(roomId, month)`: mỗi phòng 1 hóa đơn mỗi tháng.
+  - `(status, month)`: phục vụ lọc danh sách và thống kê.
+  - `(tenantId, status)`: phục vụ `GET /api/invoices/mine`.
+
+**Quy tắc nghiệp vụ hóa đơn (tất cả tính ở server, client gửi số tiền lên cũng bị bỏ qua)**
+1. Chỉ số cũ lấy tự động từ `electricNew`/`waterNew` của hóa đơn tháng trước; tháng đầu tiên của phòng thì nhập tay.
+2. `electricNew < electricOld` hoặc `waterNew < waterOld` -> 400.
+3. Phòng không có hợp đồng `active` -> 400 (không lập hóa đơn cho phòng trống).
+4. Trùng `(roomId, month)` -> 409.
+5. Luồng trạng thái: `draft -> issued -> paid`. Chỉ sửa chỉ số khi còn `draft`. Hóa đơn `paid` không được sửa.
+6. **Phòng nợ tiền** = hóa đơn có `status = "issued"` (đã phát hành nhưng chưa thu).
+7. **Doanh thu theo tháng** = tổng `total` của hóa đơn `status = "paid"`, nhóm theo `month`.
+
+## 5. Phân quyền hiển thị hóa đơn
+
+- `owner`: thấy mọi hóa đơn (kể cả `draft`).
+- `tenant`: chỉ thấy hóa đơn có `tenantId` là mình và `status` là `issued` hoặc `paid`.
+- Tenant gọi `GET /api/invoices/:id` của hóa đơn người khác -> **403**.
+- Tenant gọi hóa đơn `draft` của chính mình -> **404** (không để lộ sự tồn tại của bản nháp).
+- Vì hóa đơn lưu `tenantId`, người thuê vẫn xem được lịch sử hóa đơn sau khi hợp đồng đã kết thúc.
+
+## 6. Danh sách API
+
+| Method | URL | Vai trò | Mã trả về chính |
+|---|---|---|---|
+| POST | `/api/auth/register` | Công khai | 201, 400, 409 |
+| POST | `/api/auth/login` | Công khai | 200, 400, 401 |
+| GET | `/api/auth/me` | Đăng nhập | 200, 401 |
+| GET | `/api/users?role=tenant` | owner | 200, 401, 403 |
+| GET/POST | `/api/buildings` | owner | 200, 201, 400, 401, 403 |
+| PUT/DELETE | `/api/buildings/:id` | owner | 200, 400, 401, 403, 404 |
+| GET | `/api/rooms` (lọc `minPrice`, `maxPrice`, `minArea`, `maxArea`, `status`, `page`, `limit`) | Công khai (khách chỉ thấy phòng trống) | 200 |
+| GET | `/api/rooms/:id` | Công khai | 200, 404 |
+| POST/PUT/DELETE | `/api/rooms`, `/api/rooms/:id` | owner | 200, 201, 400, 401, 403, 404 |
+| GET/POST | `/api/contracts` | owner | 200, 201, 400, 401, 403, 409 |
+| PATCH | `/api/contracts/:id/end` | owner | 200, 400, 401, 403, 404 |
+| POST | `/api/contacts` | Công khai | 201, 400 |
+| GET | `/api/contacts` | owner | 200, 401, 403 |
+| POST | `/api/repairs` | tenant | 201, 400, 401, 403 |
+| GET | `/api/repairs/my` | tenant | 200, 401, 403 |
+| GET | `/api/repairs` | owner | 200, 401, 403 |
+| PATCH | `/api/repairs/:id/status` | owner | 200, 400, 401, 403, 404 |
+| GET | `/api/invoices/mine` | tenant | 200, 401, 403 |
+| GET | `/api/invoices/:id` | owner, tenant (đúng phòng mình) | 200, 401, 403, 404 |
+| GET | `/api/invoices` (lọc `month`, `status`, `page`, `limit`) | owner | 200, 401, 403 |
+| POST | `/api/invoices` | owner | 201, 400, 401, 403, 409 |
+| POST | `/api/invoices/bulk` (nhập chỉ số hàng loạt) | owner | 201, 400, 401, 403, 409 |
+| PATCH | `/api/invoices/:id/issue` | owner | 200, 400, 401, 403, 404 |
+| PATCH | `/api/invoices/:id/pay` | owner | 200, 400, 401, 403, 404 |
+| GET | `/api/stats/dashboard` (phòng trống, phòng nợ) | owner | 200, 401, 403 |
+| GET | `/api/stats/revenue?year=YYYY` | owner | 200, 401, 403 |
+
+Lỗi 500 do middleware xử lý lỗi tập trung trả về cho mọi API.
+
+## 7. Thống kê dùng Aggregation Pipeline (C)
+
+- **Doanh thu theo tháng**: `$match { status: "paid" }` -> `$group { _id: "$month", revenue: { $sum: "$total" } }` -> `$sort { _id: 1 }`.
+- **Phòng nợ tiền**: `$match { status: "issued" }` -> `$lookup` sang `rooms` -> `$lookup` sang `users` (theo `tenantId`) -> `$project` -> `$sort`.
