@@ -9,6 +9,7 @@ const MONTH_REGEX = /^\d{4}-(0[1-9]|1[0-2])$/;
 const toNumber = (value) =>
     value === undefined || value === null || value === "" ? NaN : Number(value);
 
+// POST /api/invoices  (owner): tạo hóa đơn nháp, server tự tính tiền
 export const createInvoice = asyncHandler(async (req, res) => {
     const { roomId, month } = req.body;
 
@@ -51,6 +52,11 @@ export const createInvoice = asyncHandler(async (req, res) => {
     const roomFee = contract.rent ?? room.price;
     const { electricPrice, waterPrice, serviceFee } = building;
 
+    // MỚI: báo lỗi rõ khi dãy trọ thiếu đơn giá (tránh tiền ra NaN)
+    if (![electricPrice, waterPrice, serviceFee].every(Number.isFinite)) {
+        throw new AppError("Dãy trọ thiếu đơn giá điện, nước hoặc phí dịch vụ", 400);
+    }
+
     const { electricFee, waterFee, total } = calcInvoice({
         roomFee,
         serviceFee,
@@ -81,8 +87,7 @@ export const createInvoice = asyncHandler(async (req, res) => {
     res.status(201).json({ invoice });
 });
 
-
-
+// GET /api/invoices?month=2026-11&status=draft&page=1&limit=10  (owner)
 export const getInvoices = asyncHandler(async (req, res) => {
     const page = Math.max(Number(req.query.page) || 1, 1);
     const limit = Math.min(Math.max(Number(req.query.limit) || 10, 1), 50);
@@ -107,6 +112,11 @@ export const getInvoices = asyncHandler(async (req, res) => {
 
 // PATCH /api/invoices/:id/issue  (owner): draft -> issued
 export const issueInvoice = asyncHandler(async (req, res) => {
+    // MỚI: id sai định dạng thì báo 400 thay vì lỗi hệ thống
+    if (!mongoose.isValidObjectId(req.params.id)) {
+        throw new AppError("id không hợp lệ", 400);
+    }
+
     const invoice = await Invoice.findById(req.params.id);
     if (!invoice) throw new AppError("Không tìm thấy hóa đơn", 404);
 
@@ -121,6 +131,11 @@ export const issueInvoice = asyncHandler(async (req, res) => {
 
 // PATCH /api/invoices/:id/pay  (owner): issued -> paid
 export const payInvoice = asyncHandler(async (req, res) => {
+    // MỚI: id sai định dạng thì báo 400 thay vì lỗi hệ thống
+    if (!mongoose.isValidObjectId(req.params.id)) {
+        throw new AppError("id không hợp lệ", 400);
+    }
+
     const invoice = await Invoice.findById(req.params.id);
     if (!invoice) throw new AppError("Không tìm thấy hóa đơn", 404);
 
