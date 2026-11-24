@@ -7,6 +7,16 @@ const invoiceSchema = new mongoose.Schema(
             ref: "Room",
             required: [true, "Phòng là bắt buộc"],
         },
+        contractId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Contract",
+            required: [true, "Hợp đồng hiệu lực là bắt buộc"],
+        },
+        tenantId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: [true, "Người thuê là bắt buộc"],
+        },
         month: {
             type: String,
             required: [true, "Tháng là bắt buộc"],
@@ -17,7 +27,6 @@ const invoiceSchema = new mongoose.Schema(
         waterOld: { type: Number, required: [true, "Thiếu chỉ số nước cũ"], min: 0 },
         waterNew: { type: Number, required: [true, "Thiếu chỉ số nước mới"], min: 0 },
 
-    
         electricPrice: { type: Number, min: 0 },
         waterPrice: { type: Number, min: 0 },
         roomFee: { type: Number, min: 0 },
@@ -31,11 +40,14 @@ const invoiceSchema = new mongoose.Schema(
             enum: ["draft", "issued", "paid"],
             default: "draft",
         },
+        issuedAt: { type: Date },
         paidAt: { type: Date },
     },
     { timestamps: true }
 );
 
 invoiceSchema.index({ roomId: 1, month: 1 }, { unique: true });
+invoiceSchema.index({ status: 1, month: 1 });
+invoiceSchema.index({ tenantId: 1, status: 1 });
 
 export default mongoose.model("Invoice", invoiceSchema);

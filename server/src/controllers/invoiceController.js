@@ -52,7 +52,6 @@ export const createInvoice = asyncHandler(async (req, res) => {
     const roomFee = contract.rent ?? room.price;
     const { electricPrice, waterPrice, serviceFee } = building;
 
-    // MỚI: báo lỗi rõ khi dãy trọ thiếu đơn giá (tránh tiền ra NaN)
     if (![electricPrice, waterPrice, serviceFee].every(Number.isFinite)) {
         throw new AppError("Dãy trọ thiếu đơn giá điện, nước hoặc phí dịch vụ", 400);
     }
@@ -70,6 +69,8 @@ export const createInvoice = asyncHandler(async (req, res) => {
 
     const invoice = await Invoice.create({
         roomId,
+        contractId: contract._id,
+        tenantId: contract.tenantId,
         month,
         electricOld,
         electricNew,
@@ -101,6 +102,7 @@ export const getInvoices = asyncHandler(async (req, res) => {
         .skip((page - 1) * limit)
         .limit(limit);
     if (mongoose.models.Room) query.populate("roomId");
+    if (mongoose.models.User) query.populate("tenantId", "name phone email");
 
     const [invoices, total] = await Promise.all([
         query,
@@ -112,7 +114,6 @@ export const getInvoices = asyncHandler(async (req, res) => {
 
 // PATCH /api/invoices/:id/issue  (owner): draft -> issued
 export const issueInvoice = asyncHandler(async (req, res) => {
-    // MỚI: id sai định dạng thì báo 400 thay vì lỗi hệ thống
     if (!mongoose.isValidObjectId(req.params.id)) {
         throw new AppError("id không hợp lệ", 400);
     }
@@ -125,13 +126,13 @@ export const issueInvoice = asyncHandler(async (req, res) => {
     }
 
     invoice.status = "issued";
+    invoice.issuedAt = new Date();
     await invoice.save();
     res.json({ invoice });
 });
 
 // PATCH /api/invoices/:id/pay  (owner): issued -> paid
 export const payInvoice = asyncHandler(async (req, res) => {
-    // MỚI: id sai định dạng thì báo 400 thay vì lỗi hệ thống
     if (!mongoose.isValidObjectId(req.params.id)) {
         throw new AppError("id không hợp lệ", 400);
     }
