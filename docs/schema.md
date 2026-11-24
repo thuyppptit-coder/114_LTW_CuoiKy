@@ -41,7 +41,7 @@ JWT payload chỉ chứa `{ id, role }`, có `expiresIn`. Không đưa email, pa
 - `roomId`: ObjectId (ref `Room`, required)
 - `title`: String, required
 - `description`: String
-- `image`: String (đường dẫn ảnh upload, Multer)
+- `image`: [String] (mảng đường dẫn ảnh upload, Multer)
 - `status`: `"new"` | `"in_progress"` | `"done"`, mặc định `"new"`
 
 Quy tắc: chỉ chuyển trạng thái theo chiều `new -> in_progress -> done`; chuyển sai thứ tự trả 400.
