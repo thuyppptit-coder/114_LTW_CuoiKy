@@ -1,16 +1,29 @@
-const mongoose = require('mongoose');
+import mongoose from "mongoose";
 
 const contractSchema = new mongoose.Schema(
   {
-    roomId: { type: mongoose.Schema.Types.ObjectId, ref: 'Room', required: true },
-    tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    roomId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Room",
+      required: true,
+    },
+    tenantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
     startDate: { type: Date, required: true },
-    endDate: { type: Date, default: null },
+    endDate: { type: Date, required: true },
+    endedAt: { type: Date, default: null },
+    rent: { type: Number, required: true, min: 0 },
     deposit: { type: Number, required: true, min: 0, default: 0 },
-    monthlyRent: { type: Number, required: true, min: 0 },
-    isActive: { type: Boolean, default: true },
+    status: {
+      type: String,
+      enum: ["active", "ended"],
+      default: "active",
+    },
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model('Contract', contractSchema);
+export default mongoose.model("Contract", contractSchema);

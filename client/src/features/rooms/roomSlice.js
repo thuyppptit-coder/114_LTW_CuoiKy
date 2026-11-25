@@ -1,31 +1,26 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import axios from 'axios';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
-export const fetchRooms = createAsyncThunk('rooms/fetchRooms', async (params = {}, thunkAPI) => {
-  try {
-    const res = await axios.get(`${API_URL}/rooms`, { params });
-    return res.data;
-  } catch (err) {
-    return thunkAPI.rejectWithValue(err.response?.data?.message || 'Lỗi tải phòng');
+export const fetchRooms = createAsyncThunk(
+  "rooms/fetchRooms",
+  async (params = {}, { rejectWithValue }) => {
+    try {
+      const qs = new URLSearchParams(
+        Object.entries(params).filter(([, v]) => v !== "" && v !== undefined && v !== null)
+      ).toString();
+      const res = await fetch(`${API_URL}/rooms?${qs}`);
+      const json = await res.json();
+      if (!res.ok) return rejectWithValue(json.message || "Lỗi tải phòng");
+      return json;
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
   }
-});
+);
 
-export const createRoom = createAsyncThunk('rooms/createRoom', async (data, thunkAPI) => {
-  try {
-    const token = localStorage.getItem('token');
-    const res = await axios.post(`${API_URL}/rooms`, data, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return res.data.data;
-  } catch (err) {
-    return thunkAPI.rejectWithValue(err.response?.data?.message || 'Lỗi tạo phòng');
-  }
-});
-
-const roomSlice = createSlice({
-  name: 'rooms',
+const roomsSlice = createSlice({
+  name: "rooms",
   initialState: {
     items: [],
     pagination: { page: 1, limit: 6, total: 0, totalPages: 1 },
@@ -41,17 +36,14 @@ const roomSlice = createSlice({
       })
       .addCase(fetchRooms.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload.data;
-        state.pagination = action.payload.pagination;
+        state.items = action.payload.data || [];
+        if (action.payload.pagination) state.pagination = action.payload.pagination;
       })
       .addCase(fetchRooms.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-      })
-      .addCase(createRoom.fulfilled, (state, action) => {
-        state.items.unshift(action.payload);
       });
   },
 });
 
-export default roomSlice.reducer;
+export default roomsSlice.reducer;

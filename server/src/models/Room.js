@@ -1,20 +1,26 @@
-const mongoose = require('mongoose');
+import mongoose from "mongoose";
 
 const roomSchema = new mongoose.Schema(
   {
-    buildingId: { type: mongoose.Schema.Types.ObjectId, ref: 'Building', required: true },
-    roomNumber: { type: String, required: true, trim: true },
+    buildingId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Building",
+      required: true,
+    },
+    name: { type: String, required: true, trim: true },
     price: { type: Number, required: true, min: 0 },
-    area: { type: Number, required: true, min: 0 },
+    area: { type: Number, required: true, min: 1 },
+    description: { type: String, default: "" },
+    images: [{ type: String }],
     status: {
       type: String,
-      enum: ['Trống', 'Đang thuê', 'Đang sửa'],
-      default: 'Trống',
+      enum: ["available", "occupied", "maintenance"],
+      default: "available",
     },
-    description: { type: String, default: '' },
-    images: [{ type: String }],
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model('Room', roomSchema);
+roomSchema.index({ buildingId: 1, name: 1 }, { unique: true });
+
+export default mongoose.model("Room", roomSchema);
