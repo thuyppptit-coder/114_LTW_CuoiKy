@@ -6,7 +6,8 @@ import authRoutes from "./routes/authRoutes.js";
 import { notFound, errorHandler } from "./middleware/errorHandler.js";
 import repairRoutes from "./routes/repairRoutes.js";
 import invoiceRoutes from "./routes/invoiceRoutes.js";
-import statsRoutes from "./routes/statsRoutes.js"; 
+import tenantRoutes from "./routes/tenantRoutes.js";
+import statsRoutes from "./routes/statsRoutes.js";
 
 dotenv.config();
 
@@ -22,7 +23,8 @@ app.get("/api/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/repairs", repairRoutes);
 app.use("/api/invoices", invoiceRoutes);
-app.use("/api/stats", statsRoutes); 
+app.use("/api/tenant", tenantRoutes);
+app.use("/api/stats", statsRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
