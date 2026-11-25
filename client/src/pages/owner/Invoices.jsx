@@ -2,19 +2,11 @@ import { useState, useMemo } from "react";
 import api from "../../services/api";
 import useFetch from "../../hooks/useFetch";
 import Button from "../../components/Button";
-import Badge from "../../components/Badge";
 import Modal from "../../components/Modal";
 import Pagination from "../../components/Pagination";
-import {
-    STATUS_LABELS,
-    STATUS_COLORS,
-    NEXT_STATUS,
-    NEXT_LABELS,
-    ACTION_PATH,
-    formatMoney,
-} from "../../utils/invoiceStatus";
-
-const roomName = (invoice) => invoice.roomId?.name ?? "—";
+import InvoiceCard from "../../components/InvoiceCard"; // SỬA: thêm component thẻ hóa đơn
+import InvoiceDetailModal from "../../components/InvoiceDetailModal"; // SỬA: thêm component chi tiết
+import { STATUS_LABELS, NEXT_STATUS, ACTION_PATH } from "../../utils/invoiceStatus"; // SỬA: bỏ các import không còn dùng
 
 const Invoices = () => {
     const [month, setMonth] = useState("");
@@ -95,25 +87,14 @@ const Invoices = () => {
                 <p className="text-gray-500">Chưa có hóa đơn nào.</p>
             ) : (
                 <ul className="space-y-3">
+                    {/* SỬA: mỗi hóa đơn là một InvoiceCard thay cho khối <li> dài */}
                     {invoices.map((inv) => (
-                        <li key={inv._id} className="rounded border border-gray-200 p-3 dark:border-gray-700">
-                            <div className="flex items-start justify-between gap-2">
-                                <div>
-                                    <h4 className="font-medium">Phòng {roomName(inv)} · Tháng {inv.month}</h4>
-                                    <p className="text-sm text-gray-500">
-                                        Điện {inv.electricOld} → {inv.electricNew} · Nước {inv.waterOld} → {inv.waterNew}
-                                    </p>
-                                    <p className="mt-1 font-semibold">{formatMoney(inv.total)}</p>
-                                </div>
-                                <Badge color={STATUS_COLORS[inv.status]}>{STATUS_LABELS[inv.status]}</Badge>
-                            </div>
-                            <div className="mt-3 flex gap-2">
-                                <Button variant="secondary" onClick={() => setDetail(inv)}>Chi tiết</Button>
-                                {NEXT_STATUS[inv.status] && (
-                                    <Button onClick={() => setConfirming(inv)}>{NEXT_LABELS[inv.status]}</Button>
-                                )}
-                            </div>
-                        </li>
+                        <InvoiceCard
+                            key={inv._id}
+                            invoice={inv}
+                            onDetail={setDetail}
+                            onAction={setConfirming}
+                        />
                     ))}
                 </ul>
             )}
@@ -122,7 +103,7 @@ const Invoices = () => {
 
             <Modal open={!!confirming} title="Xác nhận" onClose={() => setConfirming(null)}>
                 <p className="mb-4">
-                    Chuyển hóa đơn phòng {confirming && roomName(confirming)} tháng {confirming?.month} sang trạng thái{" "}
+                    Chuyển hóa đơn phòng {confirming?.roomId?.name ?? "—"} tháng {confirming?.month} sang trạng thái{" "}
                     <strong>{confirming && STATUS_LABELS[NEXT_STATUS[confirming.status]]}</strong>?
                 </p>
                 <div className="flex justify-end gap-2">
@@ -131,29 +112,8 @@ const Invoices = () => {
                 </div>
             </Modal>
 
-            <Modal open={!!detail} title={`Hóa đơn tháng ${detail?.month ?? ""}`} onClose={() => setDetail(null)}>
-                {detail && (
-                    <ul className="space-y-2 text-sm">
-                        <li className="flex justify-between"><span>Phòng</span><span>{roomName(detail)}</span></li>
-                        <li className="flex justify-between"><span>Tiền phòng</span><span>{formatMoney(detail.roomFee)}</span></li>
-                        <li className="flex justify-between">
-                            <span>Điện ({detail.electricOld} → {detail.electricNew}) × {formatMoney(detail.electricPrice)}</span>
-                            <span>{formatMoney(detail.electricFee)}</span>
-                        </li>
-                        <li className="flex justify-between">
-                            <span>Nước ({detail.waterOld} → {detail.waterNew}) × {formatMoney(detail.waterPrice)}</span>
-                            <span>{formatMoney(detail.waterFee)}</span>
-                        </li>
-                        <li className="flex justify-between"><span>Phí dịch vụ</span><span>{formatMoney(detail.serviceFee)}</span></li>
-                        <li className="flex justify-between border-t pt-2 font-semibold">
-                            <span>Tổng cộng</span><span>{formatMoney(detail.total)}</span>
-                        </li>
-                        {detail.paidAt && (
-                            <li className="text-gray-500">Đã thu lúc {new Date(detail.paidAt).toLocaleString("vi-VN")}</li>
-                        )}
-                    </ul>
-                )}
-            </Modal>
+            {/* SỬA: hộp thoại chi tiết thành component riêng */}
+            <InvoiceDetailModal invoice={detail} onClose={() => setDetail(null)} />
         </div>
     );
 };
