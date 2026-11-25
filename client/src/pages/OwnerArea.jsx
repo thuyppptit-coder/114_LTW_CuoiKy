@@ -9,7 +9,10 @@ const OwnerArea = () => (
         <nav className="mb-4 flex flex-wrap gap-1">
             <NavLink to="/owner" end className={subLink}>Tổng quan</NavLink>
             <NavLink to="/owner/repairs" className={subLink}>Sửa chữa</NavLink>
-            {/* B, C thêm NavLink của mình vào đây */}
+            <NavLink to="/owner/invoices" className={subLink}>Hóa đơn</NavLink>
+            {/* THÊM: nút Nhập chỉ số của C */}
+            <NavLink to="/owner/readings" className={subLink}>Nhập chỉ số</NavLink>
+            {/* B thêm NavLink của mình vào đây */}
         </nav>
         <Outlet />
     </section>

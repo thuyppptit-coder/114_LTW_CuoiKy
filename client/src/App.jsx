@@ -9,7 +9,9 @@ import TenantArea from "./pages/TenantArea";
 import NotFound from "./pages/NotFound";
 import TenantRepairs from "./pages/tenant/Repairs";
 import OwnerRepairs from "./pages/owner/Repairs";
-
+import OwnerInvoices from "./pages/owner/Invoices";
+import OwnerDashboard from "./pages/owner/Dashboard";
+import OwnerReadings from "./pages/owner/Readings"; 
 const App = () => (
   <Routes>
     <Route element={<Layout />}>
@@ -21,8 +23,11 @@ const App = () => (
       {/* Chỉ chủ trọ. B, C thêm <Route> con vào đây */}
       <Route element={<ProtectedRoute roles={["owner"]} />}>
         <Route path="owner" element={<OwnerArea />}>
-          <Route index element={<p>Tổng quan (C làm dashboard)</p>} />
+          <Route index element={<OwnerDashboard />} />
           <Route path="repairs" element={<OwnerRepairs />} />
+          <Route path="invoices" element={<OwnerInvoices />} />
+          {/* THÊM: đường dẫn /owner/readings */}
+          <Route path="readings" element={<OwnerReadings />} />
         </Route>
       </Route>
 
