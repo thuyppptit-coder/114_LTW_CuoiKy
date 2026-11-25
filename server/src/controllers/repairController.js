@@ -18,7 +18,7 @@ const findTenantRoomId = async (tenantId) => {
 // POST /api/repairs  (tenant, multipart/form-data)
 export const createRepair = asyncHandler(async (req, res) => {
     const { title, description } = req.body;
-    const images = (req.files || []).map((file) => `/uploads/${file.filename}`);
+    const images = (req.files || []).map((file) => file.path);
 
     const repair = await RepairRequest.create({
         tenantId: req.user._id, // lấy từ token, không tin client gửi lên

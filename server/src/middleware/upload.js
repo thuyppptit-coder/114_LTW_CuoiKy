@@ -1,14 +1,29 @@
+import { v2 as cloudinary } from "cloudinary";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
 import multer from "multer";
-import crypto from "crypto";
+import dotenv from "dotenv";
 import AppError from "../utils/AppError.js";
 
-// Chỉ cho 3 định dạng ảnh, đuôi file lấy từ mimetype chứ không tin tên file người dùng gửi
-const ALLOWED = { "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp" };
+dotenv.config();
 
-const storage = multer.diskStorage({
-    destination: "uploads",
-    filename: (req, file, cb) => {
-        cb(null, `${Date.now()}-${crypto.randomUUID()}${ALLOWED[file.mimetype]}`);
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Chỉ cho 3 định dạng ảnh
+const ALLOWED = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+};
+
+const storage = new CloudinaryStorage({
+    cloudinary,
+    params: {
+        folder: "quan-ly-nha-tro",
+        allowed_formats: ["jpg", "png", "webp"],
     },
 });
 
