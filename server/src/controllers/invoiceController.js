@@ -1,8 +1,10 @@
 import mongoose from "mongoose";
 import Invoice from "../models/Invoice.js";
+import Contract from "../models/Contract.js";
 import AppError from "../utils/AppError.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import { calcInvoice } from "../utils/calcInvoice.js";
+
 
 const MONTH_REGEX = /^\d{4}-(0[1-9]|1[0-2])$/;
 
@@ -147,5 +149,55 @@ export const payInvoice = asyncHandler(async (req, res) => {
     invoice.status = "paid";
     invoice.paidAt = new Date();
     await invoice.save();
+    res.json({ invoice });
+});
+// Người thuê chỉ thấy hóa đơn đã phát hành hoặc đã thu
+const VISIBLE_STATUSES = ["issued", "paid"];
+
+// GET /api/invoices/mine?status=issued&page=1&limit=10  (tenant)
+export const getMyInvoices = asyncHandler(async (req, res) => {
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const limit = Math.min(Math.max(Number(req.query.limit) || 10, 1), 50);
+
+    // Tìm các phòng mà người này có hợp đồng
+    const contracts = await Contract.find({ tenantId: req.user._id }).select("roomId");
+    const roomIds = contracts.map((c) => c.roomId);
+
+    const filter = { roomId: { $in: roomIds }, status: { $in: VISIBLE_STATUSES } };
+    if (VISIBLE_STATUSES.includes(req.query.status)) filter.status = req.query.status;
+
+    const [invoices, total] = await Promise.all([
+        Invoice.find(filter)
+            .populate("roomId", "name")
+            .sort({ month: -1 })
+            .skip((page - 1) * limit)
+            .limit(limit),
+        Invoice.countDocuments(filter),
+    ]);
+
+    res.json({ invoices, page, totalPages: Math.ceil(total / limit), total });
+});
+
+// GET /api/invoices/:id  (tenant: chỉ hóa đơn phòng mình, owner: xem được hết)
+export const getInvoiceById = asyncHandler(async (req, res) => {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+        throw new AppError("id không hợp lệ", 400);
+    }
+
+    const invoice = await Invoice.findById(req.params.id);
+    if (!invoice) throw new AppError("Không tìm thấy hóa đơn", 404);
+
+    if (req.user.role === "tenant") {
+        // Kiểm tra quyền ở server: người này có hợp đồng với phòng của hóa đơn không?
+        const hasContract = await Contract.exists({ tenantId: req.user._id, roomId: invoice.roomId });
+        if (!hasContract) throw new AppError("Bạn không có quyền xem hóa đơn này", 403);
+        if (!VISIBLE_STATUSES.includes(invoice.status)) throw new AppError("Không tìm thấy hóa đơn", 404);
+    }
+
+    await invoice.populate({
+        path: "roomId",
+        populate: { path: "buildingId", select: "name address" },
+    });
+
     res.json({ invoice });
 });

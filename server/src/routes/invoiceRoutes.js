@@ -4,12 +4,16 @@ import {
     getInvoices,
     issueInvoice,
     payInvoice,
+    getMyInvoices,
+    getInvoiceById,
 } from "../controllers/invoiceController.js";
 import { protect, authorize } from "../middleware/auth.js";
 
 const router = Router();
 
-router.use(protect); 
+router.use(protect);
+router.get("/mine", authorize("tenant"), getMyInvoices);
+router.get("/:id", authorize("tenant", "owner"), getInvoiceById);
 
 router.post("/", authorize("owner"), createInvoice);
 router.get("/", authorize("owner"), getInvoices);
