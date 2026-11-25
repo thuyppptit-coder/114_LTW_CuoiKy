@@ -16,9 +16,9 @@ export const calcInvoice = ({
         throw new AppError("Chỉ số nước mới không được nhỏ hơn chỉ số cũ", 400);
     }
 
-    const electricFee = (electricNew - electricOld) * electricPrice;
-    const waterFee = (waterNew - waterOld) * waterPrice;
-    const total = roomFee + electricFee + waterFee + serviceFee;
+    const electricFee = Math.round((electricNew - electricOld) * electricPrice);
+    const waterFee = Math.round((waterNew - waterOld) * waterPrice);
+    const total = Math.round(roomFee + electricFee + waterFee + serviceFee);
 
     return { electricFee, waterFee, total };
 };
