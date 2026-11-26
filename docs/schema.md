@@ -152,12 +152,13 @@ Quy tắc: chỉ chuyển trạng thái theo chiều `new -> in_progress -> done
 | POST | `/api/invoices/bulk` (nhập chỉ số hàng loạt) | owner | 201, 400, 401, 403, 409 |
 | PATCH | `/api/invoices/:id/issue` | owner | 200, 400, 401, 403, 404 |
 | PATCH | `/api/invoices/:id/pay` | owner | 200, 400, 401, 403, 404 |
-| GET | `/api/stats/dashboard` (phòng trống, phòng nợ) | owner | 200, 401, 403 |
-| GET | `/api/stats/revenue?year=YYYY` | owner | 200, 401, 403 |
+| GET | `/api/stats/summary` (số phòng theo trạng thái, số phòng nợ) | owner | 200, 401, 403 |
+| GET | `/api/stats/overdue` (danh sách phòng nợ tiền) | owner | 200, 401, 403 |
+| GET | `/api/stats/revenue?year=YYYY` | owner | 200, 400, 401, 403 |
 
 Lỗi 500 do middleware xử lý lỗi tập trung trả về cho mọi API.
 
 ## 7. Thống kê dùng Aggregation Pipeline (C)
 
 - **Doanh thu theo tháng**: `$match { status: "paid" }` -> `$group { _id: "$month", revenue: { $sum: "$total" } }` -> `$sort { _id: 1 }`.
-- **Phòng nợ tiền**: `$match { status: "issued" }` -> `$lookup` sang `rooms` -> `$lookup` sang `users` (theo `tenantId`) -> `$project` -> `$sort`.
+- **Phòng nợ tiền**: `$match { status: "issued" }` -> `$group` theo `roomId` (tổng nợ, số hóa đơn, danh sách tháng) -> `$lookup` sang `rooms` -> `$unwind` -> `$project` -> `$sort { totalDebt: -1 }`.
