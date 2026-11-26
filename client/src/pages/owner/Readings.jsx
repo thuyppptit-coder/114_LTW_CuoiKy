@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react"; 
 import api from "../../services/api";
 import Button from "../../components/Button";
 import ReadingRow from "../../components/ReadingRow";
@@ -18,10 +18,16 @@ const Readings = () => {
     const rooms = DEMO_ROOMS;
 
     const [month, setMonth] = useState(currentMonth());
-    const [values, setValues] = useState({}); // { [roomId]: { electricNew, waterNew } }
-    const [serverErrors, setServerErrors] = useState({}); // lỗi do server trả về theo phòng
-    const [message, setMessage] = useState(null); // { text, ok }
+    const [values, setValues] = useState({}); 
+    const [serverErrors, setServerErrors] = useState({}); 
+    const [message, setMessage] = useState(null); 
     const [saving, setSaving] = useState(false);
+
+    const inputRefs = useRef({});
+    const registerInput = (key, el) => {
+        if (el) inputRefs.current[key] = el;
+        else delete inputRefs.current[key];
+    };
 
     const results = useMemo(
         () =>
@@ -54,6 +60,12 @@ const Readings = () => {
         }
         if (hasError) {
             setMessage({ text: "Còn dòng nhập sai, hãy sửa các ô màu đỏ trước khi lưu.", ok: false });
+            // MỚI: đưa con trỏ vào ô sai đầu tiên
+            const firstBad = filled.find((r) => Object.keys(r.errors).length > 0);
+            if (firstBad) {
+                const field = firstBad.errors.electricNew ? "electricNew" : "waterNew";
+                inputRefs.current[`${firstBad.room._id}:${field}`]?.focus();
+            }
             return;
         }
         if (USE_DEMO_DATA) {
@@ -86,7 +98,7 @@ const Readings = () => {
             }
         }
         setServerErrors(errs);
-        
+
         setValues((prev) => Object.fromEntries(Object.entries(prev).filter(([id]) => errs[id])));
         setSaving(false);
         setMessage({
@@ -135,6 +147,7 @@ const Readings = () => {
                                 errors={errors}
                                 serverError={serverErrors[room._id]}
                                 onChange={handleChange}
+                                registerInput={registerInput} // MỚI
                             />
                         ))}
                     </tbody>
