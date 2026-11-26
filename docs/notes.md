@@ -88,3 +88,12 @@
   - Tin tưởng dữ liệu tiền gửi từ client thay vì tự truy vấn `Contract.rent` và `Building` ở server để tính toán và lưu snapshot.
   - Cho phép sửa chỉ số điện nước khi hóa đơn đã chuyển sang `issued` hoặc `paid` (chỉ được sửa khi còn ở trạng thái `draft`).
   - Sai định dạng chuỗi tháng `month` (bắt buộc chuẩn `YYYY-MM`, ví dụ `"2026-11"`, để `$sort` và lọc theo năm hoạt động chính xác).
+
+### 5.6. Hóa đơn phía Người thuê (Phạm Phương Thúy)
+- **Chức năng chính**: Người thuê xem danh sách và chi tiết hóa đơn của chính mình (`GET /api/invoices/mine`, `GET /api/invoices/:id`, chỉ thấy trạng thái `issued`/`paid`, ẩn `draft`), chặn tuyệt đối không xem được hóa đơn của phòng khác.
+- **Tệp liên quan**: `invoiceController.js`, `invoiceRoutes.js`, `Contract.js`, `Invoice.js`.
+- **Luồng xử lý**: `Request` → `protect` → `authorize` → controller (`getMyInvoices` / `getInvoiceById`) → tìm `Contract` của người thuê → so khớp phòng và tháng/trạng thái hiển thị → trả `200` nếu hợp lệ (trả `404` nếu hóa đơn đang ở trạng thái `draft`) hoặc `403` nếu thuộc phòng khác.
+- **Lỗi thường gặp**:
+  - Đặt route `/mine` sau `/:id` trong `invoiceRoutes.js` khiến Express khớp nhầm `"mine"` vào tham số `:id`.
+  - Truyền mảng `$or` rỗng vào câu truy vấn MongoDB (khi người thuê chưa có hợp đồng) gây lỗi thực thi.
+  - Lệch tên field khi ghép nối với phần B và phần C (như `roomId`, `tenantId`, `month`, `status`), hoặc chưa import model `Room`/`Building` trước khi `.populate(...)`.
