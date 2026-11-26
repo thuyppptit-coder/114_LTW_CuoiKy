@@ -3,7 +3,7 @@ const inputClass = (hasError) =>
         hasError ? "border-red-500" : "border-gray-300 dark:border-gray-600"
     }`;
 
-const ReadingRow = ({ room, values, errors, serverError, onChange }) => {
+const ReadingRow = ({ room, values, errors, serverError, onChange, registerInput }) => {
     const electricNew = values?.electricNew ?? "";
     const waterNew = values?.waterNew ?? "";
 
@@ -17,6 +17,7 @@ const ReadingRow = ({ room, values, errors, serverError, onChange }) => {
             <td className="px-2 py-2">{room.electricOld}</td>
             <td className="px-2 py-2">
                 <input
+                    ref={(el) => registerInput?.(`${room._id}:electricNew`, el)} // MỚI
                     type="number"
                     min="0"
                     aria-label={`Điện mới phòng ${room.name}`}
@@ -33,6 +34,7 @@ const ReadingRow = ({ room, values, errors, serverError, onChange }) => {
             <td className="px-2 py-2">{room.waterOld}</td>
             <td className="px-2 py-2">
                 <input
+                    ref={(el) => registerInput?.(`${room._id}:waterNew`, el)} // MỚI
                     type="number"
                     min="0"
                     aria-label={`Nước mới phòng ${room.name}`}
