@@ -1,2 +1,22 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
+
+/* In hóa đơn: chỉ in phần .print-area, ẩn menu, nút và nền modal */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    .print-area,
+    .print-area * {
+        visibility: visible;
+    }
+    .print-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        padding: 24px;
+        background: #fff;
+        color: #000;
+    }
+}
