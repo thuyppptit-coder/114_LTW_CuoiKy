@@ -17,10 +17,10 @@ const Home = () => {
     }
 
     if (user.role === "owner") {
-        return <Navigate to="/owner/buildings" replace />;
+        return <Navigate to="/owner" replace />;
     }
 
-    return <Navigate to="/tenant/room" replace />;
+    return <Navigate to="/tenant" replace />;
 };
 
 export default Home;
