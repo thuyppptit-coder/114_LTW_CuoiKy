@@ -4,8 +4,7 @@ import useFetch from "../../hooks/useFetch";
 import Badge from "../../components/Badge";
 import Pagination from "../../components/Pagination";
 import { formatMoney, formatMonth } from "../../utils/format";
-import { INVOICE_LABELS, INVOICE_COLORS } from "../../utils/invoiceStatus";
-
+import { INVOICE_LABELS, INVOICE_COLORS } from "../../utils/tenantInvoiceStatus";
 const Invoices = () => {
     const [status, setStatus] = useState("");
     const [page, setPage] = useState(1);
