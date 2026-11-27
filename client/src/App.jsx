@@ -11,7 +11,10 @@ import TenantRepairs from "./pages/tenant/Repairs";
 import OwnerRepairs from "./pages/owner/Repairs";
 import OwnerInvoices from "./pages/owner/Invoices";
 import OwnerDashboard from "./pages/owner/Dashboard";
-import OwnerReadings from "./pages/owner/Readings"; 
+import OwnerReadings from "./pages/owner/Readings";
+import TenantOverview from "./pages/tenant/Overview";
+import TenantInvoices from "./pages/tenant/Invoices";
+import TenantInvoiceDetail from "./pages/tenant/InvoiceDetail";
 const App = () => (
   <Routes>
     <Route element={<Layout />}>
@@ -36,6 +39,9 @@ const App = () => (
         <Route path="tenant" element={<TenantArea />}>
           <Route index element={<p>Phòng và hợp đồng của tôi</p>} />
           <Route path="repairs" element={<TenantRepairs />} />
+          <Route path="room" element={<MyRoomPage />} />
+          <Route path="invoices" element={<MyInvoicesPage />} />
+          <Route path="invoices/:id" element={<InvoiceDetailPage />} />
         </Route>
       </Route>
 
