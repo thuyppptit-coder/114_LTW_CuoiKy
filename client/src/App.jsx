@@ -37,11 +37,10 @@ const App = () => (
       {/* Chỉ người thuê. A thêm route con vào đây */}
       <Route element={<ProtectedRoute roles={["tenant"]} />}>
         <Route path="tenant" element={<TenantArea />}>
-          <Route index element={<p>Phòng và hợp đồng của tôi</p>} />
+          <Route index element={<TenantOverview />} />
+          <Route path="invoices" element={<TenantInvoices />} />
+          <Route path="invoices/:id" element={<TenantInvoiceDetail />} />
           <Route path="repairs" element={<TenantRepairs />} />
-          <Route path="room" element={<MyRoomPage />} />
-          <Route path="invoices" element={<MyInvoicesPage />} />
-          <Route path="invoices/:id" element={<InvoiceDetailPage />} />
         </Route>
       </Route>
 
