@@ -2,8 +2,7 @@ import { useParams, Link } from "react-router-dom";
 import useFetch from "../../hooks/useFetch";
 import Badge from "../../components/Badge";
 import { formatMoney, formatMonth, formatDate } from "../../utils/format";
-import { INVOICE_LABELS, INVOICE_COLORS } from "../../utils/invoiceStatus";
-
+import { INVOICE_LABELS, INVOICE_COLORS } from "../../utils/tenantInvoiceStatus";
 const InvoiceDetail = () => {
     const { id } = useParams(); // route động: /tenant/invoices/:id
     const { data, loading, error } = useFetch(`/invoices/${id}`);
@@ -19,7 +18,8 @@ const InvoiceDetail = () => {
         );
     }
 
-    const inv = data.invoice;
+    const inv = data?.invoice;
+    if (!inv) return null;
     const electricUsed = inv.electricNew - inv.electricOld;
     const waterUsed = inv.waterNew - inv.waterOld;
 
@@ -47,23 +47,23 @@ const InvoiceDetail = () => {
                     <thead>
                         <tr className="border-b border-gray-300 dark:border-gray-600">
                             <th className="py-2">Khoản</th>
-                            <th className="py-2">Cách tính</th>
+                            <th className="px-2 py-2">Cách tính</th>
                             <th className="py-2 text-right">Thành tiền</th>
                         </tr>
                     </thead>
                     <tbody>
                         {lines.map((line) => (
                             <tr key={line.name} className="border-b border-gray-200 dark:border-gray-700">
-                                <td className="py-2">{line.name}</td>
-                                <td className="py-2 text-sm text-gray-500">{line.detail}</td>
-                                <td className="py-2 text-right">{formatMoney(line.amount)}</td>
+                                <td className="whitespace-nowrap py-2">{line.name}</td>
+                                <td className="px-2 py-2 text-sm text-gray-500">{line.detail}</td>
+                                <td className="whitespace-nowrap py-2 text-right">{formatMoney(line.amount)}</td>
                             </tr>
                         ))}
                     </tbody>
                     <tfoot>
                         <tr className="font-bold">
                             <td className="py-3" colSpan="2">Tổng cộng</td>
-                            <td className="py-3 text-right">{formatMoney(inv.total)}</td>
+                            <td className="whitespace-nowrap py-3 text-right">{formatMoney(inv.total)}</td>
                         </tr>
                     </tfoot>
                 </table>
