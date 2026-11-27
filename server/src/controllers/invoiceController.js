@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 import Invoice from "../models/Invoice.js";
 import Contract from "../models/Contract.js";
+import "../models/Room.js";
+import "../models/Building.js";
 import AppError from "../utils/AppError.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import { calcInvoice } from "../utils/calcInvoice.js";

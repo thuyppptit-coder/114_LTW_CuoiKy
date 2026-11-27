@@ -1,4 +1,6 @@
 import Contract from "../models/Contract.js";
+import "../models/Room.js";
+import "../models/Building.js";
 import asyncHandler from "../utils/asyncHandler.js";
 
 // GET /api/tenant/overview  (tenant): hợp đồng đang hiệu lực kèm phòng và dãy trọ
