@@ -51,11 +51,11 @@ const Register = () => {
         <div className="mx-auto max-w-sm">
             <h2 className="mb-4 text-2xl font-bold">Đăng ký người thuê</h2>
             <form onSubmit={handleSubmit} noValidate>
-                <InputField label="Họ tên" name="name" value={form.name} onChange={handleChange} error={errors.name} />
-                <InputField label="Email" name="email" type="email" value={form.email} onChange={handleChange} error={errors.email} />
-                <InputField label="Số điện thoại" name="phone" value={form.phone} onChange={handleChange} error={errors.phone} />
-                <InputField label="Mật khẩu" name="password" type="password" value={form.password} onChange={handleChange} error={errors.password} />
-                <InputField label="Nhập lại mật khẩu" name="confirm" type="password" value={form.confirm} onChange={handleChange} error={errors.confirm} />
+                <InputField label="Họ tên" name="name" autoComplete="name" value={form.name} onChange={handleChange} error={errors.name} />
+                <InputField label="Email" name="email" type="email" autoComplete="email" value={form.email} onChange={handleChange} error={errors.email} />
+                <InputField label="Số điện thoại" name="phone" autoComplete="tel" value={form.phone} onChange={handleChange} error={errors.phone} />
+                <InputField label="Mật khẩu" name="password" type="password" autoComplete="new-password" value={form.password} onChange={handleChange} error={errors.password} />
+                <InputField label="Nhập lại mật khẩu" name="confirm" type="password" autoComplete="new-password" value={form.confirm} onChange={handleChange} error={errors.confirm} />
                 {serverError && <p className="mb-3 text-sm text-red-600">{serverError}</p>}
                 <Button type="submit" disabled={submitting} className="w-full">
                     {submitting ? "Đang đăng ký..." : "Đăng ký"}

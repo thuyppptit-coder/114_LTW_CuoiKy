@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useTheme } from "../context/ThemeContext";
 import Button from "./Button";
@@ -7,13 +7,13 @@ const linkClass = ({ isActive }) =>
     `px-3 py-2 rounded ${isActive ? "bg-blue-600 text-white" : "hover:bg-gray-200 dark:hover:bg-gray-700"}`;
 
 const Layout = () => {
-    const { user, logout } = useAuth();
+    const { user } = useAuth();
     const { theme, toggleTheme } = useTheme();
-    const navigate = useNavigate();
 
     const handleLogout = () => {
-        logout();
-        navigate("/login");
+        localStorage.removeItem("token");
+        window.history.replaceState(null, "", "/login");
+        window.location.replace("/login");
     };
 
     return (

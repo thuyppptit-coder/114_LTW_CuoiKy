@@ -49,8 +49,8 @@ const Login = () => {
         <div className="mx-auto max-w-sm">
             <h2 className="mb-4 text-2xl font-bold">Đăng nhập</h2>
             <form onSubmit={handleSubmit} noValidate>
-                <InputField label="Email" name="email" type="email" value={form.email} onChange={handleChange} error={errors.email} />
-                <InputField label="Mật khẩu" name="password" type="password" value={form.password} onChange={handleChange} error={errors.password} />
+                <InputField label="Email" name="email" type="email" autoComplete="email" value={form.email} onChange={handleChange} error={errors.email} />
+                <InputField label="Mật khẩu" name="password" type="password" autoComplete="current-password" value={form.password} onChange={handleChange} error={errors.password} />
                 {serverError && <p className="mb-3 text-sm text-red-600">{serverError}</p>}
                 <Button type="submit" disabled={submitting} className="w-full">
                     {submitting ? "Đang đăng nhập..." : "Đăng nhập"}
